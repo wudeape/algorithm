@@ -1,0 +1,193 @@
+   1 2 3 4 5 6 7
+#############################
+1 # | # | # | | #
+#####---#####---#---#####---# 
+2 # # | # # # # #
+#---#####---#####---#####---#
+3 # | | # # # # # 
+#---#########---#####---#---#
+4 # -># | | | | # # 
+############################# 
+
+# =墙壁 -, | = 没有墙壁
+-> =移除这面墙能使得到的新房间最大
+
+
+例子的城堡的大小是7 x 4。
+
+一个 "房间"是平面图上有连接的"小正方形"的集合。
+这个平面图包含五个房间。(它们的大小是9,7,3,1, 和 8 排列没有特别的顺序)。
+
+移除被箭作记号的墙壁来合并两个房间来制造最大的可能房间(移除一面墙所能产生的)。
+城堡总是至少有二个房间并且总是有一面墙壁以可能被移除。
+
+PROGRAM NAME: castle
+
+INPUT FORMAT
+
+地图以一个表格来储存，每个数字描述一个小正方形，N行每行M个数来描述这个平面图。
+输入顺序符合那个在上面例子的编号方式。
+每个描述小正方形的数字说明小正方形的四面的墙的分布情况，它是下面4个数的和：
+
+1: 在西面有墙 
+2: 在北面有墙 
+4: 在东面有墙 
+8: 在南面有墙 
+
+内部的墙壁是会被定义两次；小正方形(1,1)南面的墙也被指出是小正方形(2,1)北面的墙。
+
+第 1 行: 二个被空格分开的整数: M 和 N 
+第 2 到 N+1 行:   M x N 个整数,每行M个。 
+
+SAMPLE INPUT (file castle.in) 
+7 4
+11 6 11 6 3 10 6
+7 9 6 13 5 15 5
+1 10 12 7 13 7 5
+13 11 10 8 10 12 13
+
+OUTPUT FORMAT
+输出包含一些行:
+
+第 1 行:   城堡的房间数目。 
+第 2 行:   最大的房间的大小 
+第 3 行:   移除一面墙能得到的最大的房间的大小  
+第 4 行:   移除哪面墙 
+
+选择最佳的墙来移除，选择最靠西的，如果仍然不能确定，再选择最靠南的。编者注：墙的位置应该由它的中点来定义。
+墙壁由它在相邻的小正方形的西部或南方来命名
+
+SAMPLE OUTPUT (file castle.out)
+5
+9
+16
+4 1 E
+
+
+
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+#define MAXDIM 50
+#define MAXN 100
+#define MAXCOLOR 100
+#define MAXROOM (MAXDIM*MAXDIM)
+
+enum {
+    Wwest = 1,
+    Wnorth = 2,
+    Weast = 4,
+    Wsouth = 8
+};
+
+typedef struct Square Square;
+struct Square {
+    int wall;
+    int numbered;
+    int room;
+};
+ 
+int wid, ht;
+Square castle[MAXDIM][MAXDIM];
+int roomsize[MAXROOM];
+
+void
+number(int room, int x, int y)
+{
+    int w;
+
+    if(castle[x][y].numbered) {
+ assert(castle[x][y].room == room);
+ return;
+    }
+
+    castle[x][y].numbered = 1;
+    castle[x][y].room = room;
+    roomsize[room]++;
+
+    w = castle[x][y].wall;
+
+    if(x > 0 && !(w & Wwest))
+ number(room, x-1, y);
+
+    if(x+1 < wid && !(w & Weast))
+ number(room, x+1, y);
+
+    if(y > 0 && !(w & Wnorth))
+ number(room, x, y-1);
+
+    if(y+1 < ht && !(w & Wsouth))
+ number(room, x, y+1);
+}
+
+void
+main(void)
+{
+    FILE *fin, *fout;
+    int x, y, w, nroom, bigroom;
+    int i, n, m, mx, my;
+    char mc;
+
+    fin = fopen("castle.in", "r");
+    fout = fopen("castle.out", "w");
+    assert(fin != NULL && fout != NULL);
+
+    fscanf(fin, "%d %d", &wid, &ht);
+
+    /* read in wall info */
+    for(y=0; y<ht; y++) {
+ for(x=0; x<wid; x++) {
+     fscanf(fin, "%d", &w);
+     castle[x][y].wall = w;
+ }
+    }
+
+    /* number rooms */
+    nroom = 0;
+    for(y=0; y<ht; y++)
+    for(x=0; x<wid; x++)
+ if(!castle[x][y].numbered)
+     number(nroom++, x, y);
+
+    /* find biggest room */
+    bigroom = roomsize[0];
+    for(i=1; i<nroom; i++)
+ if(bigroom < roomsize[i])
+     bigroom = roomsize[i];
+
+    /* look at best that can come of removing an east or north wall */
+    m = 0;
+    for(x=0; x<wid; x++)
+    for(y=ht-1; y>=0; y--) {
+ if(y > 0 && castle[x][y].room != castle[x][y-1].room) {
+     n = roomsize[castle[x][y].room] + roomsize[castle[x][y-1].room];
+     if(n > m) {
+  m = n;
+  mx = x;
+  my = y;
+  mc = 'N';
+     }
+ }
+ if(x+1 < wid && castle[x][y].room != castle[x+1][y].room) {
+     n = roomsize[castle[x][y].room] + roomsize[castle[x+1][y].room];
+     if(n > m) {
+  m = n;
+  mx = x;
+  my = y;
+  mc = 'E';
+     }
+ }
+    }
+
+    fprintf(fout, "%d\n", nroom);
+    fprintf(fout, "%d\n", bigroom);
+    fprintf(fout, "%d\n", m);
+    fprintf(fout, "%d %d %c\n", my+1, mx+1, mc);
+    exit(0);
+}

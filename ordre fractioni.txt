@@ -1,0 +1,78 @@
+0/1 1/5 1/4 1/3 2/5 1/2 3/5 2/3 3/4 4/5 1/1
+
+Write a program that, given an integer N between 1 and 160 inclusive, prints the fractions in order of increasing magnitude. 
+
+PROGRAM NAME: frac1
+INPUT FORMAT
+One line with a single integer N. 
+SAMPLE INPUT (file frac1.in) 
+5
+
+OUTPUT FORMAT
+One fraction per line, sorted in order of magnitude. 
+SAMPLE OUTPUT (file frac1.out)
+0/1
+1/5
+1/4
+1/3
+2/5
+1/2
+3/5
+2/3
+3/4
+4/5
+1/1
+
+
+
+
+#include <fstream.h>
+#include <stdlib.h>
+
+struct fraction {
+    int numerator;
+    int denominator;
+};
+
+bool rprime(int a, int b){
+   int r = a % b;
+   while(r != 0){
+       a = b;
+       b = r;
+       r = a % b;
+   }
+   return(b == 1);
+}
+
+int fraccompare (struct fraction *p, struct fraction *q) {
+   return p->numerator * q->denominator - p->denominator *q->numerator;
+}
+
+int main(){
+   int found = 0;
+   struct fraction fract[25600];
+
+   ifstream filein("frac1.in");
+   int n;
+   filein >> n;
+   filein.close();
+
+   for(int bot = 1; bot <= n; ++bot){
+       for(int top = 0; top <= bot; ++top){
+           if(rprime(top,bot)){
+               fract[found].numerator = top;
+               fract[found++].denominator = bot;
+           }
+       }
+   }
+
+   qsort(fract, found, sizeof (struct fraction), fraccompare);
+
+   ofstream fileout("frac1.out");
+   for(int i = 0; i < found; ++i)
+       fileout << fract[i].numerator << '/' << fract[i].denominator << endl;
+   fileout.close();
+
+   exit (0);
+}
+
