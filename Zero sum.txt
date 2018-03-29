@@ -1,0 +1,112 @@
+和为零
+
+译 by TinyTony
+
+请考虑一个由1到N（N=3, 4, 5 ... 9）的数字组成的递增数列：1 2 3 ... N。
+现在请在数列中插入“+”表示加，或者“-”表示减，抑或是“ ”表示空白，来将每一对数字组合在一起（请不在第一个数字前插入符号）。
+计算该表达式的结果并注意你是否得到了和为零。
+请你写一个程序找出所有产生和为零的长度为N的数列。
+
+PROGRAM NAME: zerosum
+INPUT FORMAT
+单独的一行表示整数N (3 <= N <= 9)。
+
+SAMPLE INPUT (file zerosum.in)
+7
+
+OUTPUT FORMAT
+
+按照ASCII码的顺序，输出所有在每对数字间插入“+”, “-”, 或 “ ”后能得到和为零的数列。(注意:就算两个数字之间没有插入符号也应该保留空格)
+
+SAMPLE OUTPUT (file zerosum.out)
+
+1+2-3+4-5-6+7
+1+2-3-4+5+6-7
+1-2 3+4+5+6+7
+1-2 3-4 5+6 7
+1-2+3+4-5+6-7
+1-2-3-4-5+6+7
+
+
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+FILE *fout;
+int n;
+
+/* evaluate the string s as arithmetic and return the sum */
+int
+eval(char *s)
+{
+    int term, sign, sum;
+    char *p;
+
+    sign = 1;
+    term = 0;
+    sum = 0;
+    for(p=s; *p; p++) {
+        switch(*p){
+        case '+':
+        case '-':
+            sum += sign*term;
+            term = 0;
+            sign = *p == '+' ? 1 : -1;
+            break;
+        case ' ':
+            break;
+        default:    /* digit */
+            term = term*10 + *p-'0';
+        }
+    }
+    sum += sign*term;
+    return sum;
+}
+
+/* 
+ * Insert + - or space after each number, and then  
+ * test to see if we get zero.  The first k numbers have
+ * already been taken care of.
+ */
+void
+search(char *s, int k)
+{
+    char *p;
+
+    if(k == n-1) {
+        if(eval(s) == 0)
+            fprintf(fout, "%s\n", s);
+        return;
+    }
+
+    for(p=" +-"; *p; p++) {
+        s[2*k+1] = *p;
+        search(s, k+1);
+    }
+}
+
+void
+main(void)
+{
+    FILE *fin;
+    int i;
+    char str[30];
+
+    fin = fopen("zerosum.in", "r");
+    fout = fopen("zerosum.out", "w");
+    assert(fin != NULL && fout != NULL);
+
+    fscanf(fin, "%d", &n);
+
+    strcpy(str, "1 2 3 4 5 6 7 8 9");
+    str[2*n-1] = '\0';    /* chop string to only have first n numbers */
+
+    search(str, 0);
+
+    exit(0);
+}
